@@ -4,7 +4,10 @@ import sys
 from pathlib import Path
 import numpy as np
 
-run = Path(sys.argv[1]); seed = run/"seed_1001"
+run = Path(sys.argv[1])
+sd = sys.argv[2] if len(sys.argv) > 2 else "seed_1001"
+seed = run / sd
+print(f"[verify] {run.name}/{sd}")
 rows = []
 ts = None
 for line in (seed/"profile.txt").read_text().splitlines():

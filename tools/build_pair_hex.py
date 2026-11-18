@@ -46,6 +46,16 @@ def min_dist(x, y, Lx, Ly, chunk=512, same=False):
         m = min(m, d.min())
     return m
 
+
+def _groups(ti, cu, hot_thick=0.0):
+    """4 Ti layers (4*98=392 atoms) against 3 Cu layers (3*128=384): 2 % apart."""
+    zt, zc = ti[:,2], cu[:,2]
+    h_lo = float(zt.min()) + 8.0
+    h_hi = h_lo + 4*(C_TI/2) + 0.6
+    return {"hot": {"z_min": h_lo, "z_max": h_hi},
+            "cold": {"z_min": float(zc.max()) - 3*D_CU - 0.6, "z_max": float(zc.max())}}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--thick-ti", type=float, default=60.0)
@@ -56,6 +66,8 @@ def main():
     ap.add_argument("--groove-w", type=float, default=0.0, help="groove width along x (A)")
     ap.add_argument("--groove-d", type=float, default=0.0, help="groove depth into Cu (A)")
     ap.add_argument("--groove-p", type=float, default=0.0, help="groove period along x (A)")
+    ap.add_argument("--interlock", type=float, default=0.0,
+                    help="interlocked corrugation height H (A); requires --groove-w and --groove-p")
     ap.add_argument("--out-structure", required=True)
     ap.add_argument("--out-geom", required=True)
     a = ap.parse_args()
@@ -73,7 +85,29 @@ def main():
     ti = slab("ti", nz_ti, A_TI, C_TI/2, 0.0)
     ti[:,2] -= ti[:,2].max()                       # Ti top layer at z = 0
     z_top_ti = 0.0
-    cu = slab("cu", nz_cu, A_CU, D_CU, z_top_ti + a.gap)
+
+    # --- optional interlocked corrugation ----------------------------------
+    H = a.interlock
+    if H > 0 and a.groove_w > 0 and a.groove_p > 0:
+        phase = np.mod(ti[:,0], a.groove_p) - 0.5*a.groove_p
+        ridge = np.abs(phase) < 0.5*a.groove_w
+        # cut trenches into Ti outside the ridge columns
+        cut = (~ridge) & (ti[:,2] > z_top_ti - H)
+        print(f"[interlock] H={H} W={a.groove_w} P={a.groove_p}: cutting {int(cut.sum())} Ti atoms")
+        ti = ti[~cut]
+        z_cu_start = z_top_ti - H + a.gap
+    else:
+        ridge = None
+        z_cu_start = z_top_ti + a.gap
+
+    cu = slab("cu", nz_cu + int(np.ceil((z_cu_start)/D_CU)) + 2, A_CU, D_CU, z_cu_start)
+    cu = cu[(cu[:,2] >= z_cu_start) & (cu[:,2] < z_cu_start + a.thick_cu + 3*D_CU)]
+    if ridge is not None:
+        phase_c = np.mod(cu[:,0], a.groove_p) - 0.5*a.groove_p
+        ridge_c = np.abs(phase_c) < 0.5*a.groove_w
+        clash = ridge_c & (cu[:,2] < z_top_ti + 0.5*a.gap)
+        print(f"[interlock] removing {int(clash.sum())} Cu atoms that would overlap Ti ridges")
+        cu = cu[~clash]
     # --- optional periodic grooves cut into the Cu side --------------------
     if a.groove_w > 0 and a.groove_d > 0 and a.groove_p > 0:
         z_int = 0.5*(float(ti[:,2].max()) + float(cu[:,2].min()))
@@ -88,7 +122,7 @@ def main():
     for i in range(0, len(cu), 1024):
         d = np.linalg.norm(cu[i:i+1024,None,:2] - ti[None,:,:2], axis=2)
         dz = np.abs(cu[i:i+1024,None,2] - ti[None,:,2])
-        close = ((d**2 + dz**2) < 1.8**2).any(axis=1)
+        close = ((d**2 + dz**2) < 2.3**2).any(axis=1)
         keep[i:i+1024] = ~close
     n_drop = int((~keep).sum())
     cu = cu[keep]
@@ -129,8 +163,7 @@ def main():
       "interfaces":[{"id":"TI_CU","z":zi,
                      "left":{"z_min":zi-16.0,"z_max":zi-2.0,"material":"Ti"},
                      "right":{"z_min":zi+2.0,"z_max":zi+16.0,"material":"Cu"}}],
-      "groups":{"hot":{"z_min":float(ti[:,2].min())+8.0,"z_max":float(ti[:,2].min())+20.0},
-                "cold":{"z_min":float(cu[:,2].max())-8.0,"z_max":float(cu[:,2].max())}},
+      "groups":_groups(ti, cu, 12.0),
       "chunk_bin_A":a.bin,"expected_atoms":{"total":int(len(atoms))}}
     Path(a.out_geom).write_text(json.dumps(geom, indent=2, ensure_ascii=False)+"\n",
                                 encoding="utf-8", newline="\n")
