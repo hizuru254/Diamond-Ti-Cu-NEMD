@@ -53,6 +53,9 @@ def main():
     ap.add_argument("--vacuum", type=float, default=15.0)
     ap.add_argument("--gap", type=float, default=2.45, help="target Ti-Cu NN across the interface")
     ap.add_argument("--bin", type=float, default=2.0)
+    ap.add_argument("--groove-w", type=float, default=0.0, help="groove width along x (A)")
+    ap.add_argument("--groove-d", type=float, default=0.0, help="groove depth into Cu (A)")
+    ap.add_argument("--groove-p", type=float, default=0.0, help="groove period along x (A)")
     ap.add_argument("--out-structure", required=True)
     ap.add_argument("--out-geom", required=True)
     a = ap.parse_args()
@@ -71,6 +74,15 @@ def main():
     ti[:,2] -= ti[:,2].max()                       # Ti top layer at z = 0
     z_top_ti = 0.0
     cu = slab("cu", nz_cu, A_CU, D_CU, z_top_ti + a.gap)
+    # --- optional periodic grooves cut into the Cu side --------------------
+    if a.groove_w > 0 and a.groove_d > 0 and a.groove_p > 0:
+        z_int = 0.5*(float(ti[:,2].max()) + float(cu[:,2].min()))
+        phase = np.mod(cu[:,0], a.groove_p) - 0.5*a.groove_p
+        in_groove = (np.abs(phase) < 0.5*a.groove_w) & (cu[:,2] < z_int + a.groove_d)
+        print(f"[groove] W={a.groove_w} D={a.groove_d} P={a.groove_p}: "
+              f"removing {int(in_groove.sum())} Cu atoms")
+        cu = cu[~in_groove]
+
     # drop Cu atoms that sit closer than 1.8 A to any Ti atom (interface overlap)
     keep = np.ones(len(cu), bool)
     for i in range(0, len(cu), 1024):
