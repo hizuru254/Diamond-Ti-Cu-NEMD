@@ -119,3 +119,46 @@ n×2.510 = m×2.950 → 20/17 = 1.176，误差 0.06%，即 17 个 Ti 对 20 个 
 - 界面处允许有 1.8 Å 内的重叠对，用 `remove_close` 删掉
 
 这条自检就是因为我在 Ti 标定里连犯两次建胞错误才加的。
+
+
+## 11. 暂停点（2026-11-18 23:25，电脑关机）
+
+### 已完成并验证
+
+| 项 | 结果 |
+|---|---|
+| 势函数 | CuTiC_NEP（Cu/C/Ti/Cr/Mo/W，24k 参数），LAMMPS USER-NEP 编译通过 |
+| 体相标定 | Cu a0=3.650(+1.0%)、C a0=3.550(-0.5%)、Ti a=2.950(-0.03%) c/a=1.56(-1.7%) |
+| 界面几何 | Cu(111)/Ti(0001)，7:8 共格（-0.012%），最近邻自检 PASS |
+| **flat 基线** | **TBR_int = 7.33e-10 m²K/W，三 seed 离散 ±1.6%** |
+| 稳定性 | dPE/dt = +0.002 eV/ps，零互混（旧 LJ 体系是 -1~-6 eV/ps、700+ 原子互混） |
+| 估计量 | 平面外推 `tbr_extrap.py`（R²≈0.98）为**首选**；窗口法 7.08e-10 与之吻合；±30Å 平面法 1.71e-9、全剖面拟合 2.17e-9 均含体相项 |
+| 互锁图案 | `build_pair_hex.py --interlock H`，几何 PASS |
+| 互锁算例 | run_v002 **只跑到 ~15%/305k 步就暂停**，不是失败 |
+
+### 中断时的状态
+
+- `workspace/run_v002/seed_1001/` 有 in.pattern 和部分 log.pattern（我 pkill 了）
+- **恢复方法**：删掉该 seed 目录下的 log/profile/screen，直接重跑
+  ```bash
+  cd /home/cc/si_ti_cu_nemd
+  rm -f workspace/run_v002/seed_1001/{log.pattern,profile.txt,screen.txt,screen.err.txt}
+  MPIRUN_EXTRA="--cpu-set 0-23" bash tools/run_seed.sh workspace/run_v002 1001
+  ```
+  61 步/秒，约 1.4 小时。
+
+### 明天的顺序
+
+1. 跑完 run_v002（互锁 H=6 W=6 P=10.325）
+2. `python3 tools/tbr_extrap.py --run-dir workspace/run_v002 --seed seed_1001` → 与 7.33e-10 比较
+3. 同时跑 `python3 tools/verify_run.py workspace/run_v002 seed_1001` 查 dPE/dt 与互混
+4. 若互锁降低 TBR → 扫 H∈{3,6,9}、W∈{3,6,9}、P∈{5.16,10.33,20.65}
+5. 若无效 → 改做界面局部合金化（Ti-Cu 梯度过渡层），仍用同一套外推法评估
+6. 最终做 5 层 C/Ti/Cu/Ti/C 锚点，验证串联可加性
+
+### 性能提醒（今天踩过）
+
+- **不要并发跑多个 NEP 算例**：NEP 内存带宽密集，两个 24 ranks 各只有 6-14 步/秒，
+  单跑 61 步/秒。一律串行。
+- 起基准测试前先确认主算例已停，否则互相抢核，测出来的数没有意义。
+- `pkill -9 -f lmp_mpi` 之后要确认 `pgrep -c lmp_mpi` 归零再起新作业。
