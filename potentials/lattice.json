@@ -1,14 +1,34 @@
 {
-  "Si": {
-    "a0_A": 5.4,
-    "E0_eV_atom": -5.4649
-  },
+  "potential": "potentials/CuTiC_NEP.txt",
+  "elements": [
+    "Cu",
+    "C",
+    "Cr",
+    "Mo",
+    "Ti",
+    "W"
+  ],
   "Cu": {
-    "a0_A": 3.56,
-    "E0_eV_atom": -4.2969
+    "structure": "fcc",
+    "a0_A": 3.65,
+    "exp_a0_A": 3.615,
+    "dev_pct": 0.97
   },
-  "Au": {
-    "a0_A": 4.12,
-    "E0_eV_atom": -3.8233
-  }
+  "C": {
+    "structure": "diamond",
+    "a0_A": 3.55,
+    "exp_a0_A": 3.567,
+    "dev_pct": -0.48
+  },
+  "Ti": {
+    "structure": "hcp",
+    "a0_A": 2.95,
+    "covera": 1.56,
+    "c_A": 4.602,
+    "exp_a0_A": 2.951,
+    "exp_covera": 1.587,
+    "dev_a_pct": -0.03,
+    "dev_covera_pct": -1.7
+  },
+  "note": "grid minima from tools/calib_ti_par.py, tools/calibrate_cutic.py; energies carry a constant reference offset (E_Ti=-7.94 vs -4.85 exp) which is irrelevant for MD"
 }
