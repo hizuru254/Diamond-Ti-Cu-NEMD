@@ -1,0 +1,4 @@
+=== relax from experimental-ish cells (box/relax tri) ===
+hcp: E=-8.3353 eV/atom  a=2.8589 c=4.0431 c/a=1.414
+fcc: E=-7.9189 eV/atom  a=3.0394
+bcc: E=-7.8627 eV/atom  a=2.7334
