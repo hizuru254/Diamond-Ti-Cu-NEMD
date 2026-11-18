@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "status": "APPROVED",
+  "approved_by": "agent",
+  "approved_at": "2026-11-18",
+  "files": {
+    "potentials.in": {
+      "sha256": "87e32cf599a358c1b36d1f9540ff120b61bc1891c36d09f935ee0ddc5b1ef520"
+    },
+    "CuTiC_NEP.txt": {
+      "sha256": "39b8c52ac46b5923f762f935f790922b482f4bce7462fdd52c76bf811452fbef"
+    }
+  },
+  "bulk_validation": {
+    "Cu_a0_A": 3.65,
+    "Cu_exp": 3.615,
+    "C_a0_A": 3.55,
+    "C_exp": 3.567,
+    "Ti_a_A": 2.95,
+    "Ti_covera": 1.56,
+    "Ti_exp": [
+      2.951,
+      1.587
+    ],
+    "verdict": "PASS",
+    "verdict_note": "PASS: all lattice constants within 2 % of experiment"
+  },
+  "note": "Model from wugai-whu/NEP-Cu-X-diamond-thermal-conductivity, converted nep4 -> format_version 1"
+}

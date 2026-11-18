@@ -2,4 +2,4 @@
 # Model: potentials/nep89.txt  (download with tools/get_nep89.sh, 14 MB)
 # Element mapping follows the LAMMPS atom types in this project: 1=Si 2=Ti 3=Cu
 pair_style nep
-pair_coeff * * ../../../../potentials/nep89.txt Si Ti Cu
+pair_coeff * * ../../../potentials/CuTiC_NEP.txt C Ti Cu
