@@ -120,9 +120,10 @@ def main():
     # drop Cu atoms that sit closer than 1.8 A to any Ti atom (interface overlap)
     keep = np.ones(len(cu), bool)
     for i in range(0, len(cu), 1024):
-        d = np.linalg.norm(cu[i:i+1024,None,:2] - ti[None,:,:2], axis=2)
+        dx = np.abs(cu[i:i+1024,None,0] - ti[None,:,0]); dx = np.minimum(dx, L-dx)
+        dy = np.abs(cu[i:i+1024,None,1] - ti[None,:,1]); dy = np.minimum(dy, Ly-dy)
         dz = np.abs(cu[i:i+1024,None,2] - ti[None,:,2])
-        close = ((d**2 + dz**2) < 2.3**2).any(axis=1)
+        close = ((dx**2 + dy**2 + dz**2) < 2.3**2).any(axis=1)
         keep[i:i+1024] = ~close
     n_drop = int((~keep).sum())
     cu = cu[keep]
