@@ -66,6 +66,9 @@ def main():
     ap.add_argument("--groove-w", type=float, default=0.0, help="groove width along x (A)")
     ap.add_argument("--groove-d", type=float, default=0.0, help="groove depth into Cu (A)")
     ap.add_argument("--groove-p", type=float, default=0.0, help="groove period along x (A)")
+    ap.add_argument("--alloy", type=float, default=0.0,
+                    help="thickness (A) of a graded Ti-Cu alloy layer at the interface")
+    ap.add_argument("--alloy-seed", type=int, default=7)
     ap.add_argument("--interlock", type=float, default=0.0,
                     help="interlocked corrugation height H (A); requires --groove-w and --groove-p")
     ap.add_argument("--out-structure", required=True)
@@ -130,6 +133,25 @@ def main():
 
     atoms = np.vstack([ti, cu])
     types = np.concatenate([np.full(len(ti),2), np.full(len(cu),3)])
+
+    # --- optional graded Ti-Cu alloy layer ---------------------------------
+    if a.alloy > 0:
+        rng = np.random.default_rng(a.alloy_seed)
+        z_all = atoms[:,2]
+        zi_mid = 0.5*(z_all[types == 2].max() + z_all[types == 3].min())
+        lo, hi = zi_mid - 0.5*a.alloy, zi_mid + 0.5*a.alloy
+        inreg = (z_all >= lo) & (z_all <= hi)
+        frac = np.clip((z_all - lo)/max(a.alloy, 1e-9), 0.0, 1.0)   # 0 = Ti side
+        u = rng.random(len(atoms))
+        # Ti atom becomes Cu with probability frac; Cu atom becomes Ti with 1-frac
+        to_cu = inreg & (types == 2) & (u < frac)
+        to_ti = inreg & (types == 3) & (u > frac)
+        n_cu = int(to_cu.sum()); n_ti = int(to_ti.sum())
+        types = types.copy()
+        types[to_cu] = 3
+        types[to_ti] = 2
+        print(f"[alloy] graded layer {a.alloy} A: {n_cu} Ti->Cu, {n_ti} Cu->Ti "
+              f"({int(inreg.sum())} atoms in the region)")
     zmin = atoms[:,2].min() - a.vacuum
     zmax = atoms[:,2].max() + a.vacuum
 

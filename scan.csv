@@ -1,3 +1,7 @@
 scan_id,kind,W_nm,D_nm,P_nm,t_nm,phi_deg,sided,status,note
 FLAT2,pair,0,0,0,0,0,single,pending,flat interface reference (same reservoir windows)
 IL_H6W6P10,pair,6,6,10.325,0,0,single,pending,interlocked H=6 W=6 P=10.325
+ALY_T6,pair,0,0,0,0,0,single,pending,alloy design 6
+ALY_T10,pair,0,0,0,0,0,single,pending,alloy design 10
+FLAT_R,pair,0,0,0,0,0,single,pending,rebuilt flat control
+IL_H3W6P10,pair,0,0,0,0,0,single,pending,shallow interlock
