@@ -44,8 +44,8 @@ def profile(bl):
     return z, T
 
 
-def dT_planes(z, T, Z):
-    """Linear interpolation of T at z = -Z and z = +Z using the nearest finite bins."""
+def dT_planes(z, T, Z, zc=0.0):
+    """Linear interpolation of T at z = zc-Z and z = zc+Z."""
     def at(zp):
         m = np.isfinite(T)
         zz, tt = z[m], T[m]
@@ -68,6 +68,8 @@ def main() -> int:
     ap.add_argument("--z", type=float, default=84.0)
     ap.add_argument("--burn", type=float, default=0.0)
     ap.add_argument("--blocks", type=int, default=10)
+    ap.add_argument("--center", type=float, default=None,
+                    help="interface plane; default from geom interfaces[0].z")
     args = ap.parse_args()
 
     run = Path(args.run_dir).resolve()
@@ -77,8 +79,9 @@ def main() -> int:
     blocks = parse_blocks(sd / "profile.txt")
     n0 = int(len(blocks) * args.burn)
     use = blocks[n0:]
+    zc = args.center if args.center is not None else float(geom["interfaces"][0]["z"])
     z, T = profile(use)
-    dT = dT_planes(z, T, args.z)
+    dT = dT_planes(z, T, args.z, zc)
     area = float(geom["box"]["lx"]) * float(geom["box"]["ly"])
     q = (float(params["flux_ev_per_ps"]) * float(params["units"]["ev_per_ps_to_W"])
          / (area * float(params["units"]["ang2_to_m2"])))
@@ -90,14 +93,14 @@ def main() -> int:
         if b <= a:
             continue
         zb, Tb = profile(blocks[a:b])
-        per.append(dT_planes(zb, Tb, args.z) / q)
+        per.append(dT_planes(zb, Tb, args.z, zc) / q)
     per = np.array(per)
     sem = per.std(ddof=1) / math.sqrt(len(per)) if len(per) > 1 else float("nan")
     # half-to-half
     h = len(per) // 2
     rel = abs(per[:h].mean() - per[h:].mean()) / per[h:].mean()
 
-    print(f"{run.name}: dT(+-{args.z:.0f}) = {dT:.2f} K  "
+    print(f"{run.name}: dT(+-{args.z:.0f} about z={zc:.2f}) = {dT:.2f} K  "
           f"TBR_eff = {tbr:.4e} +/- {sem:.2e} ({100*sem/tbr:.1f}%)  "
           f"half-to-half = {100*rel:.1f}%")
     out = {"run_id": run.name, "seed": args.seed, "z_planes": args.z,
