@@ -7,3 +7,4 @@ FLAT_R,pair,0,0,0,0,0,single,pending,rebuilt flat control
 IL_H3W6P10,pair,0,0,0,0,0,single,pending,shallow interlock
 ALY_T2,pair,0,0,0,0,0,single,pending,thin alloy
 FLUX3,pair,0,0,0,0,0,single,pending,flat at 3x flux (linear response check)
+FLUX2,pair,0,0,0,0,0,single,pending,flat at 2x flux
