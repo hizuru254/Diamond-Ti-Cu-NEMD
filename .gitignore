@@ -3,3 +3,6 @@ __pycache__/
 workspace/
 structures/
 logs/
+
+# presentation files stay local
+*.pptx
